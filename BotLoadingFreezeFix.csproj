@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>FFloridaMann.BotLoadingFreezeFix</AssemblyName>
+    <RootNamespace>BotLoadingFreezeFix</RootNamespace>
+    <!-- Keep in step with the version in [BepInPlugin] in Plugin.cs. -->
+    <Version>1.0.1</Version>
+    <Authors>FFloridaMann</Authors>
+    <Company>FFloridaMann</Company>
+    <Product>The Bot Loading Freeze Fix</Product>
+    <!-- Release DLLs carry no debug file path from the build machine. -->
+    <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
+    <Deterministic>true</Deterministic>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <!-- Your SPT folder. Override without editing: dotnet build -c Release -p:SptDir="D:\Games\SPT" -->
+    <SptDir Condition="'$(SptDir)' == ''">G:\SPT</SptDir>
+    <Managed>$(SptDir)\EscapeFromTarkov_Data\Managed</Managed>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="BepInEx" HintPath="$(SptDir)\BepInEx\core\BepInEx.dll" Private="false" />
+    <Reference Include="0Harmony" HintPath="$(SptDir)\BepInEx\core\0Harmony.dll" Private="false" />
+    <Reference Include="Assembly-CSharp" HintPath="$(Managed)\Assembly-CSharp.dll" Private="false" />
+    <Reference Include="Comfort" HintPath="$(Managed)\Comfort.dll" Private="false" />
+    <Reference Include="Comfort.Unity" HintPath="$(Managed)\Comfort.Unity.dll" Private="false" />
+    <Reference Include="ItemComponent.Types" HintPath="$(Managed)\ItemComponent.Types.dll" Private="false" />
+    <Reference Include="UnityEngine" HintPath="$(Managed)\UnityEngine.dll" Private="false" />
+    <Reference Include="UnityEngine.CoreModule" HintPath="$(Managed)\UnityEngine.CoreModule.dll" Private="false" />
+  </ItemGroup>
+
+</Project>
