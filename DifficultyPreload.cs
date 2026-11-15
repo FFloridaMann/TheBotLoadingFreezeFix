@@ -94,8 +94,9 @@ namespace BotLoadingFreezeFix
 
                 if (_state == State.Running && _next >= _pairs.Count)
                 {
+                    int count = _pairs.Count; // Commit clears the list
                     Commit();
-                    Plugin.Log.LogInfo($"Preloaded bot difficulty settings at the menu: {_pairs.Count} bot types and difficulties " +
+                    Plugin.Log.LogInfo($"Preloaded bot difficulty settings at the menu: {count} bot types and difficulties " +
                                        $"in {Ms(_workTicks):0} ms of work over {_frames} frames, plus {_fetchMs:0} ms fetching them from the server.");
                 }
             }
