@@ -25,8 +25,10 @@ namespace BotLoadingFreezeFix
     // - The 30 s check added another full top-up for every empty bot type while a request was already
     //   waiting, so requests grew from 8 to 32 per type before they were sent. Now it waits for the send.
     //
-    // Since 1.1.0 it also loads the bot difficulty settings at the main menu (DifficultyPreload.cs), which took
-    // 5-6 s of the first raid's loading-screen freeze.
+    // Since 1.1.0 it also shortens two loading-screen freezes at raid start:
+    // - it loads the bot difficulty settings at the main menu (DifficultyPreload.cs), 5-6 s of the first raid;
+    // - it stops the game searching the whole scene for bot zones once per added spawn point (SpawnZoneCache.cs),
+    //   9 s on Customs.
     [BepInPlugin("ffloridamann.botloadingfreezefix", "The Bot Loading Freeze Fix", "1.1.0")]
     public class Plugin : BaseUnityPlugin
     {
@@ -47,6 +49,7 @@ namespace BotLoadingFreezeFix
             harmony.PatchAll(typeof(SmoothSpareFetch));
             harmony.PatchAll(typeof(OneTopUpAtATime));
             DifficultyPreload.Patch(harmony);
+            SpawnZoneCache.Patch(harmony);
         }
 
         private void Update()

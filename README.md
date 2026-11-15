@@ -1,6 +1,6 @@
 # The Bot Loading Freeze Fix
 
-A BepInEx client mod for SPT 4.1.6 that removes the roughly one-second freeze about 115 seconds into a raid, and the smaller ones that can follow about 50 seconds later. Since 1.1.0 it also takes about 5 seconds off the loading-screen freeze of the first raid after each game start.
+A BepInEx client mod for SPT 4.1.6 that removes the roughly one-second freeze about 115 seconds into a raid, and the smaller ones that can follow about 50 seconds later. Since 1.1.0 it also shortens the loading-screen freezes at raid start: about 5 seconds off the first raid after each game start, and about 9 seconds off every Customs raid (more or less on other maps).
 
 ## What causes the freeze
 
@@ -25,6 +25,12 @@ This mod does the same loading at the main menu instead, using the game's own co
 
 All difficulties are loaded, so changing bot difficulty between raids, or turning bots off for a raid, works exactly as before.
 
+## Shorter spawn point setup (1.1.0)
+
+At raid start the game adds every spawn point the server lists but the map itself doesn't have: 158 on Customs on the test PC. For each one it searched the whole scene for all bot zones, just to find the zone with the right name. One search took about 58 ms on Customs, so this step alone held the loading screen for 9.2 seconds.
+
+The game has already found that list of bot zones a moment earlier and hands it to the same step. This mod lets each new spawn point use that list instead of searching again: the same zones in the same order, so each spawn point ends up in the same zone. Maps that add few spawn points (Icebreaker, for example) gain little.
+
 ## Install
 
 Open the zip and drag its `BepInEx` folder into your SPT folder: the one that holds `EscapeFromTarkov.exe` and its own `BepInEx` folder, wherever it is installed (any drive). Say yes if Windows asks to merge folders. The DLL ends up at:
@@ -43,12 +49,15 @@ None. It writes one line to the BepInEx log for each spare fetch, for example:
 Once per game start it also writes one line for the difficulty preload, for example:
 `Preloaded bot difficulty settings at the menu: 280 bot types and difficulties in 5120 ms of work over 571 frames, plus 250 ms fetching them from the server.`
 
+And once per raid, when the game adds spawn points:
+`Spawn points: 158 added using the bot zone list the game already had (16 zones), instead of searching the scene 158 more times.`
+
 ## Compatibility
 
 - Built and tested on SPT 4.1.6 (EFT 0.16.9).
 - Only acts when the game uses its normal backend session, so other setups fall back to the game's own behaviour.
 - Fika: not tested yet.
-- A game or SPT update that changes `BotProfileClient.LoadProfiles`, `BotProfileBackuploader`, `BotInternalSettingsController` or the bot generate request may need a rebuild.
+- A game or SPT update that changes `BotProfileClient.LoadProfiles`, `BotProfileBackuploader`, `BotInternalSettingsController`, `SpawnPointMarker.Create` or the bot generate request may need a rebuild. If the spawn point code changes shape, the mod leaves it alone and says so in the log.
 - If the game finds bot settings files on disk (a developer feature), the difficulty preload steps aside and the game loads them as usual.
 
 ## Building
@@ -61,7 +70,7 @@ It references `Assembly-CSharp`, `Comfort`, `UnityEngine` and BepInEx/Harmony fr
 
 ## Changelog
 
-- **1.1.0**: loads the bot difficulty settings at the main menu, taking about 5 seconds off the first raid's loading-screen freeze.
+- **1.1.0**: loads the bot difficulty settings at the main menu, taking about 5 seconds off the first raid's loading-screen freeze; new spawn points reuse the game's bot zone list instead of searching the scene for each one, about 9 seconds off Customs.
 - **1.0.2**: each spare profile now goes into the pool once instead of twice; spare requests no longer pile up while one is waiting to be sent; the log line shows what was asked for and the pool size.
 - **1.0.1**: waits for the next frame for at most 50 ms, so the build keeps moving even if the plugin's update loop is not running.
 - **1.0.0**: first version.
