@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using BepInEx;
 using BepInEx.Logging;
@@ -17,7 +18,13 @@ namespace BotLoadingFreezeFix
     //
     // This builds the same profiles from the same request, about one per frame.
     // Only those timed spare fetches change. Raid-start and on-demand fetches are left alone.
-    [BepInPlugin("ffloridamann.botloadingfreezefix", "The Bot Loading Freeze Fix", "1.0.1")]
+    //
+    // It also fixes two bugs in how the game keeps those spares:
+    // - Each spare profile went into the pool twice (once in LoadProfiles, once in the LoadedByBackup callback),
+    //   so two bots could be handed the same profile. Now only the game's callback adds them.
+    // - The 30 s check added another full top-up for every empty bot type while a request was already
+    //   waiting, so requests grew from 8 to 32 per type before they were sent. Now it waits for the send.
+    [BepInPlugin("ffloridamann.botloadingfreezefix", "The Bot Loading Freeze Fix", "1.0.2")]
     public class Plugin : BaseUnityPlugin
     {
         internal const double BudgetMs = 1.0;
@@ -33,7 +40,9 @@ namespace BotLoadingFreezeFix
         private void Awake()
         {
             Log = Logger;
-            new Harmony("ffloridamann.botloadingfreezefix").PatchAll(typeof(SmoothSpareFetch));
+            var harmony = new Harmony("ffloridamann.botloadingfreezefix");
+            harmony.PatchAll(typeof(SmoothSpareFetch));
+            harmony.PatchAll(typeof(OneTopUpAtATime));
         }
 
         private void Update()
@@ -99,9 +108,16 @@ namespace BotLoadingFreezeFix
 
             Profile[] result = profiles.ToArray();
             client.CheckLoadingResult(result, waves);
-            client._simpleProfiles.AddRange(result);
+            // Not added to the pool here: BotProfileBackuploader.DoLoad passes the result to
+            // LoadedByBackup, which adds it. Adding it here too put every spare in the pool twice.
 
-            Log.LogInfo($"Built {result.Length} spare bot profiles in {buildTicks * 1000.0 / Stopwatch.Frequency:0} ms over {frames} frames; {waitsOverLimit} waits hit the {FrameWaitLimitMs} ms limit.");
+            string asked = string.Join(", ", waves.Select(w => $"{w.Role}/{w.Difficulty} {w.Limit}"));
+            List<Profile> pool = client._simpleProfiles;
+            int duplicates = pool.Count - pool.Select(p => p.Id).Distinct().Count();
+            int skips = OneTopUpAtATime.TakeSkips();
+
+            Log.LogInfo($"Built {result.Length} spare bot profiles in {buildTicks * 1000.0 / Stopwatch.Frequency:0} ms over {frames} frames; {waitsOverLimit} waits hit the {FrameWaitLimitMs} ms limit. " +
+                        $"Asked for: {asked}. Pool before adding: {pool.Count} profiles, {duplicates} duplicates. Top-up checks held while waiting: {skips}.");
             return result;
         }
     }
@@ -116,6 +132,38 @@ namespace BotLoadingFreezeFix
                 return true;
 
             __result = Plugin.LoadSpareProfiles(__instance, session, waves);
+            return false;
+        }
+    }
+
+    // The game's 30 s spare check adds a full top-up for each bot type with no profiles left, without marking
+    // a request as pending, so it adds the same top-up again 30 s later until the request is sent (every 50 s,
+    // the first one about 110 s into the raid). Skipping the check while a request is waiting stops that.
+    [HarmonyPatch(typeof(BotProfileBackuploader), nameof(BotProfileBackuploader.CacheSimpleProfilesChecker))]
+    internal static class OneTopUpAtATime
+    {
+        private static int _skips;
+        private static float _nextCount;
+
+        internal static int TakeSkips()
+        {
+            int skips = _skips;
+            _skips = 0;
+            return skips;
+        }
+
+        [HarmonyPrefix]
+        private static bool Prefix(BotProfileBackuploader __instance)
+        {
+            if (__instance._cacheToLoad == null || __instance._cacheToLoad.Count == 0)
+                return true;
+
+            // Counted at most once per 30 s, the interval the game's check acts on (it is called every 5 s).
+            if (__instance._uploadCacheComplete && __instance._nextCacheUpload <= UnityEngine.Time.time && UnityEngine.Time.time >= _nextCount)
+            {
+                _skips++;
+                _nextCount = UnityEngine.Time.time + 30f;
+            }
             return false;
         }
     }
