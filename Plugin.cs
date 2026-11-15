@@ -24,7 +24,10 @@ namespace BotLoadingFreezeFix
     //   so two bots could be handed the same profile. Now only the game's callback adds them.
     // - The 30 s check added another full top-up for every empty bot type while a request was already
     //   waiting, so requests grew from 8 to 32 per type before they were sent. Now it waits for the send.
-    [BepInPlugin("ffloridamann.botloadingfreezefix", "The Bot Loading Freeze Fix", "1.0.2")]
+    //
+    // Since 1.1.0 it also loads the bot difficulty settings at the main menu (DifficultyPreload.cs), which took
+    // 5-6 s of the first raid's loading-screen freeze.
+    [BepInPlugin("ffloridamann.botloadingfreezefix", "The Bot Loading Freeze Fix", "1.1.0")]
     public class Plugin : BaseUnityPlugin
     {
         internal const double BudgetMs = 1.0;
@@ -43,10 +46,13 @@ namespace BotLoadingFreezeFix
             var harmony = new Harmony("ffloridamann.botloadingfreezefix");
             harmony.PatchAll(typeof(SmoothSpareFetch));
             harmony.PatchAll(typeof(OneTopUpAtATime));
+            DifficultyPreload.Patch(harmony);
         }
 
         private void Update()
         {
+            DifficultyPreload.Step();
+
             if (_nextFrame == null)
                 return;
 

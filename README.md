@@ -1,6 +1,6 @@
 # The Bot Loading Freeze Fix
 
-A BepInEx client mod for SPT 4.1.6 that removes the roughly one-second freeze about 115 seconds into a raid, and the smaller ones that can follow about 50 seconds later.
+A BepInEx client mod for SPT 4.1.6 that removes the roughly one-second freeze about 115 seconds into a raid, and the smaller ones that can follow about 50 seconds later. Since 1.1.0 it also takes about 5 seconds off the loading-screen freeze of the first raid after each game start.
 
 ## What causes the freeze
 
@@ -17,6 +17,14 @@ It also fixes two bugs in how the game keeps those spare profiles:
 - **Every spare profile went into the pool twice**, so two bots could be given the same profile. Now each goes in once.
 - **Spare requests piled up.** Every 30 seconds the game added another top-up for each bot type it had run out of, even while the last top-up was still waiting to be sent, so a request for 8 profiles of a type grew to 32. Now it waits until the waiting request has been sent.
 
+## Shorter first-raid loading freeze (1.1.0)
+
+In the first raid after each game start, the game loads the difficulty settings for every bot type at every difficulty: about 280 sets, all parsed in the single frame just before the raid starts. On the test PC that took 5–6 seconds of the loading-screen freeze. The game keeps them until you quit, so later raids skip it.
+
+This mod does the same loading at the main menu instead, using the game's own code in the game's own order, about one set per frame. The menu runs a little slower for 5–10 seconds while it works, with one short pause of about a quarter of a second while the settings are fetched from the server. If you start a raid before it has finished, the rest is loaded at raid start, which is never slower than before. If anything is missing or goes wrong, the mod leaves the loading to the game.
+
+All difficulties are loaded, so changing bot difficulty between raids, or turning bots off for a raid, works exactly as before.
+
 ## Install
 
 Open the zip and drag its `BepInEx` folder into your SPT folder: the one that holds `EscapeFromTarkov.exe` and its own `BepInEx` folder, wherever it is installed (any drive). Say yes if Windows asks to merge folders. The DLL ends up at:
@@ -32,12 +40,16 @@ None. It writes one line to the BepInEx log for each spare fetch, for example:
 
 "Asked for" is what was requested, "duplicates" should stay at 0, and "held" counts the 30-second checks that waited for the request to be sent.
 
+Once per game start it also writes one line for the difficulty preload, for example:
+`Preloaded bot difficulty settings at the menu: 280 bot types and difficulties in 5120 ms of work over 571 frames, plus 250 ms fetching them from the server.`
+
 ## Compatibility
 
 - Built and tested on SPT 4.1.6 (EFT 0.16.9).
 - Only acts when the game uses its normal backend session, so other setups fall back to the game's own behaviour.
 - Fika: not tested yet.
-- A game or SPT update that changes `BotProfileClient.LoadProfiles`, `BotProfileBackuploader` or the bot generate request may need a rebuild.
+- A game or SPT update that changes `BotProfileClient.LoadProfiles`, `BotProfileBackuploader`, `BotInternalSettingsController` or the bot generate request may need a rebuild.
+- If the game finds bot settings files on disk (a developer feature), the difficulty preload steps aside and the game loads them as usual.
 
 ## Building
 
@@ -49,6 +61,7 @@ It references `Assembly-CSharp`, `Comfort`, `UnityEngine` and BepInEx/Harmony fr
 
 ## Changelog
 
+- **1.1.0**: loads the bot difficulty settings at the main menu, taking about 5 seconds off the first raid's loading-screen freeze.
 - **1.0.2**: each spare profile now goes into the pool once instead of twice; spare requests no longer pile up while one is waiting to be sent; the log line shows what was asked for and the pool size.
 - **1.0.1**: waits for the next frame for at most 50 ms, so the build keeps moving even if the plugin's update loop is not running.
 - **1.0.0**: first version.

@@ -5,7 +5,7 @@
     <AssemblyName>FFloridaMann.BotLoadingFreezeFix</AssemblyName>
     <RootNamespace>BotLoadingFreezeFix</RootNamespace>
     <!-- Keep in step with the version in [BepInPlugin] in Plugin.cs. -->
-    <Version>1.0.2</Version>
+    <Version>1.1.0</Version>
     <Authors>FFloridaMann</Authors>
     <Company>FFloridaMann</Company>
     <Product>The Bot Loading Freeze Fix</Product>
