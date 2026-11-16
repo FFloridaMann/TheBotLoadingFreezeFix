@@ -33,6 +33,19 @@ Known issues
 - Tested on one PC, mostly on Customs. Streets and Icebreaker haven't been checked with 1.1.0 yet.
 - A game or SPT update may need a new build. If the spawn point or difficulty code changes, those parts switch themselves off and say so in the BepInEx log.
 
+Bot mods (SAIN, Looting Bots, ORBIT and others)
+
+This mod changes when bot profiles and settings are loaded, not what they contain, so it's very unlikely to cause problems in other bot mods:
+
+- It builds the same bot profiles from the same server data, using the game's own code. It only spreads the building over several frames.
+- Each bot profile is built in full within one frame. The pauses come between bots, never in the middle of one.
+- No other mod can see the new profiles until the whole batch is done. They go into the game's spare pool at the end, the same point where the game adds them itself.
+- Bot mods act on a bot once it spawns. By then its profile was finished long ago, whether it was built in one frame or over 60.
+- The difficulty settings are loaded with the game's own loader, in the same order, into the same tables. Only the time changes, from the loading screen to the main menu.
+- On the test PC (SAIN, ORBIT, MoreBots, ABPS and more), no other mod hooks the spare-profile code this mod replaces.
+
+If a bot misbehaves (for example a PMC with its weapon on its back and empty hands), try a few raids without this mod. If it still happens, look at your bot mods first. Either way, a report with your BepInEx log and mod list helps.
+
 Install:
 
 Open the zip and drag its BepInEx folder into your SPT folder: the one that holds EscapeFromTarkov.exe and its own BepInEx folder, wherever it is installed (any drive). Say yes if Windows asks to merge folders. The DLL ends up at:
